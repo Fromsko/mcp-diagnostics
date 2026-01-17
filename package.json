@@ -2,8 +2,8 @@
   "name": "mcp-diagnostics",
   "displayName": "MCP Diagnostics Service",
   "description": "Expose VS Code Problems as diagnostics-only MCP service for LLM integration",
-  "version": "0.1.8",
-  "publisher": "fromsko",
+  "version": "0.1.9",
+  "publisher": "Fromsko-work",
   "author": "Fromsko-work",
   "icon": "icon.png",
   "engines": {
