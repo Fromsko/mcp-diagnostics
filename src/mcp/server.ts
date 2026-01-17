@@ -9,14 +9,14 @@ export type DiagnosticItem = {
   line: number;
   character: number;
   severity: "error" | "warning" | "info" | "hint";
-  source?: string;
+  source?: string
   message: string;
 };
 
 export type DiagnosticsProvider = () => DiagnosticItem[];
 export type FileProvider = (path: string) => string;
 
-const FIX_PROMPT = `You are a diagnostics-driven code fixer.
+export const FIX_PROMPT = `You are a diagnostics-driven code fixer.
 
 You must only act based on diagnostics explicitly provided
 by the get_diagnostics tool.

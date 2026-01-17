@@ -2,38 +2,98 @@
   "name": "mcp-diagnostics",
   "displayName": "MCP Diagnostics Service",
   "description": "Expose VS Code Problems as diagnostics-only MCP service for LLM integration",
-  "version": "0.1.0",
+  "version": "0.1.8",
   "publisher": "fromsko",
   "author": "Fromsko-work",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
+  "repository": {
+    "url": "https://github.com/Fromsko-work/mcp-diagnostics"
+  },
   "contributes": {
     "commands": [
       {
         "command": "mcpDiagnostics.toggle",
-        "title": "Enable MCP Diagnostics Service"
+        "title": "Enable MCP Diagnostics Service",
+        "icon": "$(play)"
       },
       {
         "command": "mcpDiagnostics.showConfig",
-        "title": "Show MCP Configuration"
+        "title": "Show MCP Configuration",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "mcpDiagnostics.refresh",
+        "title": "Refresh Diagnostics",
+        "icon": "$(refresh)"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mcp-diagnostics",
+          "title": "MCP Diagnostics",
+          "icon": "resources/sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "mcp-diagnostics": [
+        {
+          "type": "webview",
+          "id": "mcpDiagnostics.panel",
+          "name": "MCP Service",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "mcpDiagnostics.toggle",
+          "when": "view == mcpDiagnostics.panel",
+          "group": "navigation"
+        },
+        {
+          "command": "mcpDiagnostics.refresh",
+          "when": "view == mcpDiagnostics.panel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "MCP Diagnostics",
+      "properties": {
+        "mcpDiagnostics.port": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 65535,
+          "description": "HTTP server port. Set to 0 for random port."
+        }
+      }
+    }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/vscode": "^1.85.0",
+    "esbuild": "^0.27.2",
     "typescript": "^5.3.0"
   },
   "dependencies": {

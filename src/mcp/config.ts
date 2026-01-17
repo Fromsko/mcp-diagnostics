@@ -1,13 +1,26 @@
-export function getMcpConfig() {
+export function getMcpConfig(port?: number | null) {
+  if (port) {
+    return {
+      mcpServers: {
+        "vscode-diagnostics": {
+          url: `http://127.0.0.1:${port}/sse`,
+          transport: {
+            type: "sse"
+          },
+          description: "Expose VS Code Problems as diagnostics-only MCP service"
+        }
+      }
+    };
+  }
+
   return {
     mcpServers: {
       "vscode-diagnostics": {
-        command: "node",
-        args: [],
+        url: "http://127.0.0.1:<PORT>/sse",
         transport: {
-          type: "stdio"
+          type: "sse"
         },
-        description: "Expose VS Code Problems as diagnostics-only MCP service"
+        description: "Expose VS Code Problems as diagnostics-only MCP service (start service first)"
       }
     }
   };
