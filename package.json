@@ -4,6 +4,7 @@
   "description": "Expose VS Code Problems as diagnostics-only MCP service for LLM integration",
   "version": "0.1.0",
   "publisher": "fromsko",
+  "author": "Fromsko-work",
   "engines": {
     "vscode": "^1.85.0"
   },
