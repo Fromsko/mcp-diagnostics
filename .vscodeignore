@@ -1,0 +1,25 @@
+# 源码和构建配置
+**/src/**
+tsconfig.json
+bun.lock
+
+# Git 相关
+.git/**
+.gitignore
+.gitea/**
+
+# 依赖和缓存
+node_modules/**
+
+# 打包产物
+*.vsix
+
+# 开发文件
+.vscode/**
+.vscode-test/**
+*.log
+.DS_Store
+
+esbuild.js
+
+.crush/**
