@@ -1,0 +1,125 @@
+name: 发布 VS Code 扩展 (Production)
+run-name: ${{ gitea.actor }} 发布 MCP-Diagnostics v${{ inputs.version || '自动检测' }} 🚀
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["package.json"]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "强制指定版本号 (可选)"
+        required: false
+        type: string
+
+env:
+  # 统一管理配置
+  GITEA_URL: "http://192.168.192.1:3000"
+  REGISTRY: "https://registry.npmmirror.com"
+  EXT_NAME: "mcp-diagnostics"
+
+jobs:
+  publish:
+    name: 构建并发布
+    runs-on: bun
+    steps:
+      - name: 📋 检出代码仓库
+        uses: ${{ env.GITEA_URL }}/andy/checkout@main
+        with:
+          fetch-depth: 0 # 必须为 0 才能正确对比 git 历史
+
+      - name: ⚡ 缓存 Bun 依赖
+        uses: ${{ env.GITEA_URL }}/fromsko/cache@main
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+
+      - name: 📦 环境准备
+        run: |
+          npm config set registry ${{ env.REGISTRY }}
+          bun install --frozen-lockfile
+          # 检查 vsce 是否已安装，未安装则安装
+          command -v vsce >/dev/null 2>&1 || bun i -g vsce
+
+      - name: 📄 版本决策中心
+        id: version_logic
+        run: |
+          # 1. 获取当前版本
+          CUR_V=$(node -p "require('./package.json').version")
+
+          # 2. 判断是否跳过
+          SKIP=false
+          if [ "${{ gitea.event_name }}" = "push" ] && [ -z "${{ gitea.ref_tag }}" ]; then
+            PREV_V=$(git show HEAD~1:package.json | node -p "require('fs').readFileSync(0).toString(), JSON.parse(stdin).version" 2>/dev/null || echo "unknown")
+            if [ "$CUR_V" = "$PREV_V" ]; then SKIP=true; fi
+          fi
+
+          echo "version=$CUR_V" >> $GITHUB_OUTPUT
+          echo "skip=$SKIP" >> $GITHUB_OUTPUT
+          echo "V_TAG=v$CUR_V" >> $GITHUB_OUTPUT
+
+      - name: 🏗️ 生产环境打包
+        if: steps.version_logic.outputs.skip != 'true'
+        run: |
+          # 使用生产构建命令
+          bun run compile
+          vsce package
+          # 动态重命名检测 (防止版本号不一致)
+          VSIX_FILE="${{ env.EXT_NAME }}-${{ steps.version_logic.outputs.version }}.vsix"
+          if [ ! -f "$VSIX_FILE" ]; then
+             echo "❌ 找不到 $VSIX_FILE，尝试查找当前目录 vsix"
+             VSIX_FILE=$(ls *.vsix | head -n 1)
+          fi
+          echo "FINAL_VSIX=$VSIX_FILE" >> $GITHUB_ENV
+
+      - name: 🏷️ 自动维护 Git 标签
+        if: steps.version_logic.outputs.skip != 'true'
+        run: |
+          TAG="${{ steps.version_logic.outputs.V_TAG }}"
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            git config user.name "Gitea Actions"
+            git config user.email "actions@gitea.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: 📦 同步至 VS Code Marketplace
+        if: steps.version_logic.outputs.skip != 'true'
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          # 增加验证步骤
+          if [ -z "$VSCE_PAT" ]; then
+            echo "❌ 缺少 VSCE_PAT 密钥，跳过市场发布"
+          else
+            vsce publish -p $VSCE_PAT --packagePath ${{ env.FINAL_VSIX }}
+          fi
+
+      - name: 🚀 创建 Gitea Release
+        if: steps.version_logic.outputs.skip != 'true'
+        uses: ${{ env.GITEA_URL }}/fromsko/gitea-release-action@v1
+        with:
+          token: ${{ secrets.GITEA_TOKEN }}
+          tag_name: ${{ steps.version_logic.outputs.V_TAG }}
+          name: "MCP-Diagnostics ${{ steps.version_logic.outputs.V_TAG }}"
+          body: |
+            ## 🎉 MCP-Diagnostics ${{ steps.version_logic.outputs.V_TAG }} 发布
+
+            ### 📝 提交摘要
+            $(git log -10 --pretty=format:"- %s (%h)")
+
+            ---
+            构建时间: ${{ env.BUILD_TIME }}
+          files: |
+            ${{ env.FINAL_VSIX }}
+          md5sum: true
+          sha256sum: true
+
+      - name: 🎯 状态汇总
+        if: always()
+        run: |
+          echo "### 构建总结" >> $GITHUB_STEP_SUMMARY
+          echo "- 版本: ${{ steps.version_logic.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 状态: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 跳过发布: ${{ steps.version_logic.outputs.skip }}" >> $GITHUB_STEP_SUMMARY
