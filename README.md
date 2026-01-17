@@ -46,6 +46,7 @@ code --install-extension mcp-diagnostics-*.vsix
 Paste the configuration into your LLM client's MCP settings:
 
 **Claude Desktop** (`claude_desktop_config.json`):
+
 ```json
 {
   "mcpServers": {
@@ -66,6 +67,7 @@ Note: Replace `YOUR_PORT` with the actual port number shown in the sidebar panel
 Use the "Show MCP Configuration" command to obtain a ready-to-use MCP configuration JSON.
 
 This MCP service is:
+
 - **Diagnostics-only**: Only provides read access to VS Code diagnostics
 - **Read-only**: Cannot modify your code
 - **Secure**: Runs locally on your machine with configurable port
@@ -83,6 +85,7 @@ Get all current diagnostics (errors, warnings, hints) from the active VS Code wo
 Retrieve the full content of a source file from the current VS Code workspace.
 
 **Parameters**:
+
 - `path` (string): The file path to read
 
 **Response**: Full file contents with line numbers for context.
@@ -165,7 +168,7 @@ MIT
 
 ## Repository
 
-https://github.com/Fromsko-work/mcp-diagnostics
+https://github.com/Fromsko/mcp-diagnostics
 
 ## Contributing
 
